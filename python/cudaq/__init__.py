@@ -380,6 +380,7 @@ _LAZY_ATTRS = {
     'Schedule': '.dynamics.schedule',
     'evolve': '.dynamics.evolution',
     'evolve_async': '.dynamics.evolution',
+    'propagator': '.dynamics.evolution',
     'IntermediateResultSave': '.dynamics.helpers',
 }
 

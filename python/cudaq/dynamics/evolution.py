@@ -511,6 +511,47 @@ def evolve(
                                  shots_count)
 
 
+@trace.traced
+def propagator(
+    hamiltonian: Operator | SuperOperator,
+    dimensions: Mapping[int, int],
+    schedule: Schedule,
+    integrator: Optional[BaseIntegrator] = None,
+) -> NDArray[numpy.complexfloating]:
+    """
+    Compute the closed-system propagator by evolving each computational basis
+    state and stacking the final states as columns.
+
+    The returned matrix U satisfies dU/dt = -i H(t) U with U(t_initial) = I.
+    """
+    _validate_system_dimensions(dimensions)
+
+    dimension = int(numpy.prod(list(dimensions.values())))
+    columns = []
+
+    for basis_index in range(dimension):
+        state_data = numpy.zeros(dimension, dtype=numpy.complex128)
+        state_data[basis_index] = 1.0
+        initial_state = cudaq_runtime.State.from_data(state_data)
+
+        schedule.reset()
+
+        result = evolve(
+            hamiltonian,
+            dimensions,
+            schedule,
+            initial_state,
+            collapse_operators=[],
+            observables=[],
+            store_intermediate_results=IntermediateResultSave.NONE,
+            integrator=integrator,
+        )
+
+        columns.append(numpy.array(result.final_state()).reshape(-1))
+
+    return numpy.column_stack(columns)
+
+
 def evolve_single_async(
         hamiltonian: Operator,
         dimensions: Mapping[int, int],
